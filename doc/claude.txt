@@ -1,0 +1,105 @@
+*claude.txt*  Integrate Claude AI into Vim
+
+                    VIM-CLAUDE DOCUMENTATION
+
+Author:  Your Name
+License: MIT
+Version: 0.1.0
+
+==============================================================================
+CONTENTS                                                      *claude-contents*
+
+    1. Introduction ............................ |claude-introduction|
+    2. Installation ............................ |claude-installation|
+    3. Usage ................................... |claude-usage|
+    4. Configuration ........................... |claude-configuration|
+    5. Commands ................................ |claude-commands|
+    6. Mappings ................................ |claude-mappings|
+    7. Troubleshooting ......................... |claude-troubleshooting|
+
+==============================================================================
+INTRODUCTION                                              *claude-introduction*
+
+vim-claude is a plugin that integrates Claude AI directly into Vim, allowing
+you to select text, provide a prompt, and get AI-powered assistance for
+explaining, modifying, or refactoring code.
+
+==============================================================================
+INSTALLATION                                              *claude-installation*
+
+Prerequisites:
+  - Python 3.6+
+  - anthropic Python package: pip install anthropic
+  - Anthropic API key
+
+Using Pathogen:
+>
+    cd ~/.vim/bundle
+    git clone https://github.com/yourusername/vim-claude.git
+<
+
+Set your API key in .vimrc:
+>
+    let g:claude_api_key = 'your-api-key-here'
+<
+
+==============================================================================
+USAGE                                                            *claude-usage*
+
+Basic workflow:
+  1. Select text in visual mode
+  2. Press <Leader>c
+  3. Enter your prompt
+  4. Choose action: (r)eplace, (i)nsert, or (s)how
+
+==============================================================================
+CONFIGURATION                                            *claude-configuration*
+
+                                                            *g:claude_api_key*
+g:claude_api_key~
+    Your Anthropic API key. Can also be set via ANTHROPIC_API_KEY
+    environment variable.
+    Default: $ANTHROPIC_API_KEY
+
+                                                              *g:claude_model*
+g:claude_model~
+    The Claude model to use for requests.
+    Default: 'claude-sonnet-4-20250514'
+
+                                                         *g:claude_max_tokens*
+g:claude_max_tokens~
+    Maximum tokens in Claude's response.
+    Default: 4096
+
+                                                *g:claude_no_default_mappings*
+g:claude_no_default_mappings~
+    Set to 1 to disable default key mappings.
+    Default: 0
+
+==============================================================================
+COMMANDS                                                      *claude-commands*
+
+                                                           *:ClaudeSetAPIKey*
+:ClaudeSetAPIKey {key}
+    Set the API key from within Vim.
+
+==============================================================================
+MAPPINGS                                                      *claude-mappings*
+
+                                                            *<Plug>ClaudePrompt*
+<Plug>ClaudePrompt
+    Process the current visual selection with Claude.
+    Default mapping: <Leader>c (in visual mode)
+
+==============================================================================
+TROUBLESHOOTING                                        *claude-troubleshooting*
+
+If you encounter issues:
+
+  1. Verify Python 3 is installed: python3 --version
+  2. Verify anthropic package: pip show anthropic
+  3. Check API key is set correctly
+  4. Check Vim has Python support: :echo has('python3')
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:

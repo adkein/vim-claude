@@ -12,10 +12,11 @@ CONTENTS                                                      *claude-contents*
     1. Introduction ............................ |claude-introduction|
     2. Installation ............................ |claude-installation|
     3. Usage ................................... |claude-usage|
-    4. Configuration ........................... |claude-configuration|
-    5. Commands ................................ |claude-commands|
-    6. Mappings ................................ |claude-mappings|
-    7. Troubleshooting ......................... |claude-troubleshooting|
+    4. Session Management ...................... |claude-sessions|
+    5. Configuration ........................... |claude-configuration|
+    6. Commands ................................ |claude-commands|
+    7. Mappings ................................ |claude-mappings|
+    8. Troubleshooting ......................... |claude-troubleshooting|
 
 ==============================================================================
 INTRODUCTION                                              *claude-introduction*
@@ -25,8 +26,11 @@ Claude Code CLI. Select text, provide a prompt, and get AI-powered assistance
 for explaining, modifying, or refactoring code - all covered by your existing
 Claude subscription!
 
-Features async processing with an animated progress indicator, so you can see
-Claude working. Prevents multiple concurrent requests to avoid confusion.
+Features:
+  - Async processing with animated progress indicator
+  - Persistent conversation sessions across all requests in same Vim session
+  - Claude remembers context from previous interactions
+  - Prevents multiple concurrent requests to avoid confusion
 
 ==============================================================================
 INSTALLATION                                              *claude-installation*
@@ -46,14 +50,56 @@ No additional configuration needed!
 ==============================================================================
 USAGE                                                            *claude-usage*
 
-Basic workflow:
+Visual mode (selected text):
   1. Select text in visual mode
   2. Press <Leader>c
   3. Enter your prompt
   4. Wait while animated spinner shows progress
-  5. Choose action: (r)eplace, (i)nsert, or (s)how
+  5. Choose action: (r)eplace or (s)how
+
+Normal mode (whole file):
+  1. In normal mode (no selection)
+  2. Press <Leader>c
+  3. Enter your prompt
+  4. Wait while animated spinner shows progress
+  5. Choose action: (r)eplace entire file or (s)how in split
+
+Quick actions:
+  Visual mode: <Leader>cr / <Leader>cs - Replace/split selected text
+  Normal mode: <Leader>cr / <Leader>cs - Replace/split entire file
 
 Note: You cannot start a new request while one is already processing.
+
+All requests in the same Vim session share conversation context. Claude
+remembers previous interactions, allowing for follow-up questions.
+
+==============================================================================
+SESSION MANAGEMENT                                            *claude-sessions*
+
+The plugin maintains a persistent conversation session across all requests
+in the same Vim session. Each Vim session gets a unique UUID that's passed
+to Claude Code via --session-id.
+
+This means:
+  - Claude remembers all previous interactions
+  - You can ask follow-up questions
+  - You can reference earlier discussions
+  - Context is maintained throughout your editing session
+
+Multi-File Context:
+  When using normal mode prompts, each buffer is sent only once per session.
+  This saves tokens while allowing Claude to synthesize across multiple files.
+
+  Example workflow:
+    - Open file1.py, press <Leader>cs → Sends entire file1.py
+    - Open file2.py, press <Leader>cs → Sends entire file2.py
+    - Back to file1.py, press <Leader>cs → Just sends prompt (Claude has both)
+    - After editing file1.py, use :ClaudeResendFile to update Claude's context
+
+Commands:
+  :ClaudeNewSession  - Start fresh (clears all context and buffer tracking)
+  :ClaudeShowSession - Show current session ID for debugging
+  :ClaudeResendFile  - Mark current buffer to resend on next normal mode prompt
 
 ==============================================================================
 CONFIGURATION                                            *claude-configuration*
@@ -77,10 +123,56 @@ g:claude_no_default_mappings~
 ==============================================================================
 MAPPINGS                                                      *claude-mappings*
 
+Visual Mode Mappings (selected text):
+
                                                             *<Plug>ClaudePrompt*
 <Plug>ClaudePrompt
-    Process the current visual selection with Claude.
+    Process the current visual selection with Claude (interactive mode).
     Default mapping: <Leader>c (in visual mode)
+
+                                                      *<Plug>ClaudePromptReplace*
+<Plug>ClaudePromptReplace
+    Process the current visual selection and replace with Claude's response.
+    Default mapping: <Leader>cr (in visual mode)
+
+                                                       *<Plug>ClaudePromptSplit*
+<Plug>ClaudePromptSplit
+    Process the current visual selection and show in split window.
+    Default mapping: <Leader>cs (in visual mode)
+
+Normal Mode Mappings (whole file):
+
+                                                        *<Plug>ClaudeFilePrompt*
+<Plug>ClaudeFilePrompt
+    Process the entire current file with Claude (interactive mode).
+    Default mapping: <Leader>c (in normal mode)
+
+                                                  *<Plug>ClaudeFilePromptReplace*
+<Plug>ClaudeFilePromptReplace
+    Process the entire file and replace with Claude's response.
+    Default mapping: <Leader>cr (in normal mode)
+
+                                                   *<Plug>ClaudeFilePromptSplit*
+<Plug>ClaudeFilePromptSplit
+    Process the entire file and show response in split window.
+    Default mapping: <Leader>cs (in normal mode)
+
+==============================================================================
+COMMANDS                                                      *claude-commands*
+
+                                                          *:ClaudeNewSession*
+:ClaudeNewSession
+    Start a new conversation session. Clears all conversation context and
+    buffer tracking. Use this when switching to an unrelated task.
+
+                                                         *:ClaudeShowSession*
+:ClaudeShowSession
+    Display the current session ID for debugging purposes.
+
+                                                          *:ClaudeResendFile*
+:ClaudeResendFile
+    Mark the current buffer to be resent on the next normal mode prompt.
+    Use this after making edits to ensure Claude sees your changes.
 
 ==============================================================================
 TROUBLESHOOTING                                        *claude-troubleshooting*

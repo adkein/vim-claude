@@ -8,17 +8,50 @@ let s:claude_state = {
       \ 'timer': -1,
       \ 'spinner_idx': 0,
       \ 'processing': 0,
-      \ 'temp_file': ''
+      \ 'temp_file': '',
+      \ 'action': '',
+      \ 'session_id': '',
+      \ 'whole_file': 0
       \ }
+
+" Track which buffers have been sent to Claude this session
+let s:buffers_sent = {}
+
+" Generate a UUID v4 for session tracking
+function! s:GenerateUUID() abort
+  " Simple UUID v4 generation
+  let l:chars = '0123456789abcdef'
+  let l:uuid = ''
+
+  for l:i in range(36)
+    if l:i == 8 || l:i == 13 || l:i == 18 || l:i == 23
+      let l:uuid .= '-'
+    elseif l:i == 14
+      let l:uuid .= '4'
+    elseif l:i == 19
+      let l:uuid .= l:chars[4 + (rand() % 4)]
+    else
+      let l:uuid .= l:chars[rand() % 16]
+    endif
+  endfor
+
+  return l:uuid
+endfunction
+
+" Initialize session ID
+let s:claude_state.session_id = s:GenerateUUID()
 
 let s:spinner_frames = ['|', '/', '-', '\']
 
-function! claude#ProcessSelection() abort
+function! claude#ProcessSelection(...) abort
   " Check if already processing
   if s:claude_state.processing
     echo "Already processing a request. Please wait..."
     return
   endif
+
+  " Get optional action parameter ('r' for replace, 's' for split, '' for prompt)
+  let l:action = a:0 > 0 ? a:1 : ''
 
   " Save the current selection
   let l:save_reg = @"
@@ -41,12 +74,111 @@ function! claude#ProcessSelection() abort
   let s:claude_state.user_prompt = l:user_prompt
   let s:claude_state.processing = 1
   let s:claude_state.output = []
+  let s:claude_state.action = l:action
 
   " Start the spinner
   call claude#StartSpinner()
 
   " Call the API asynchronously
   call claude#CallAPIAsync(l:selected_text, l:user_prompt)
+endfunction
+
+function! claude#ProcessSelectionReplace() abort
+  call claude#ProcessSelection('r')
+endfunction
+
+function! claude#ProcessSelectionSplit() abort
+  call claude#ProcessSelection('s')
+endfunction
+
+function! claude#ProcessFile(...) abort
+  " Check if already processing
+  if s:claude_state.processing
+    echo "Already processing a request. Please wait..."
+    return
+  endif
+
+  " Get optional action parameter ('r' for replace, 's' for split, '' for prompt)
+  let l:action = a:0 > 0 ? a:1 : ''
+
+  " Check if this buffer has been sent before
+  let l:bufnr = bufnr('%')
+  let l:file_content = ''
+  let l:prompt_suffix = ''
+
+  if !has_key(s:buffers_sent, l:bufnr)
+    " First time for this buffer - send whole file
+    let l:file_content = join(getline(1, '$'), "\n")
+    let s:buffers_sent[l:bufnr] = 1
+    let l:prompt_suffix = ' (whole file)'
+  else
+    " Already sent this buffer - just send prompt
+    let l:file_content = ''
+    let l:prompt_suffix = ''
+  endif
+
+  " Get the prompt from the user
+  call inputsave()
+  let l:user_prompt = input('Claude prompt' . l:prompt_suffix . ': ')
+  call inputrestore()
+
+  if empty(l:user_prompt)
+    echo "\nCancelled."
+    return
+  endif
+
+  " Store state for async callback
+  let s:claude_state.selected_text = l:file_content
+  let s:claude_state.user_prompt = l:user_prompt
+  let s:claude_state.processing = 1
+  let s:claude_state.output = []
+  let s:claude_state.action = l:action
+  let s:claude_state.whole_file = 1
+
+  " Start the spinner
+  call claude#StartSpinner()
+
+  " Call the API asynchronously
+  call claude#CallAPIAsync(l:file_content, l:user_prompt)
+endfunction
+
+function! claude#ProcessFileReplace() abort
+  call claude#ProcessFile('r')
+endfunction
+
+function! claude#ProcessFileSplit() abort
+  call claude#ProcessFile('s')
+endfunction
+
+function! claude#NewSession() abort
+  if s:claude_state.processing
+    echo "Cannot start new session while processing. Please wait..."
+    return
+  endif
+
+  let s:claude_state.session_id = s:GenerateUUID()
+  let s:buffers_sent = {}
+  echo "New Claude session started: " . s:claude_state.session_id
+endfunction
+
+function! claude#ShowSessionId() abort
+  echo "Current Claude session ID: " . s:claude_state.session_id
+endfunction
+
+function! claude#ResendFile() abort
+  if s:claude_state.processing
+    echo "Cannot resend file while processing. Please wait..."
+    return
+  endif
+
+  " Clear this buffer from sent tracking
+  let l:bufnr = bufnr('%')
+  if has_key(s:buffers_sent, l:bufnr)
+    unlet s:buffers_sent[l:bufnr]
+    echo "Buffer marked to resend on next normal mode prompt"
+  else
+    echo "Buffer hasn't been sent yet"
+  endif
 endfunction
 
 function! claude#StartSpinner() abort
@@ -84,7 +216,12 @@ function! claude#CallAPIAsync(selected_text, user_prompt) abort
   endif
 
   " Build the full prompt
-  let l:full_prompt = a:user_prompt . "\n\nHere is the text/code:\n\n" . a:selected_text
+  if !empty(a:selected_text)
+    let l:full_prompt = a:user_prompt . "\n\nHere is the text/code:\n\n" . a:selected_text
+  else
+    " No text/code to send (already sent in session context)
+    let l:full_prompt = a:user_prompt
+  endif
 
   " Create a temporary file with the prompt
   let l:temp_input = tempname()
@@ -93,8 +230,12 @@ function! claude#CallAPIAsync(selected_text, user_prompt) abort
   " Store temp file path in state for cleanup later
   let s:claude_state.temp_file = l:temp_input
 
-  " Build command to pipe temp file to claude
-  let l:cmd = printf('%s --model %s < %s', g:claude_cli_command, g:claude_model, shellescape(l:temp_input))
+  " Build command to pipe temp file to claude with session ID
+  let l:cmd = printf('%s --model %s --session-id %s < %s',
+        \ g:claude_cli_command,
+        \ g:claude_model,
+        \ s:claude_state.session_id,
+        \ shellescape(l:temp_input))
 
   " Start the job
   let l:job = job_start(['/bin/sh', '-c', l:cmd], {
@@ -152,26 +293,55 @@ function! claude#OnClose(channel) abort
     return
   endif
 
-  " Ask user what to do with the response
-  call inputsave()
-  let l:action = input('Action: (r)eplace, (i)nsert below, (s)how in split: ')
-  call inputrestore()
+  " Determine action (use pre-selected or prompt user)
+  let l:action = s:claude_state.action
+  if empty(l:action)
+    call inputsave()
+    let l:action = input('Action: (r)eplace, (s)how in split: ')
+    call inputrestore()
+  endif
 
   if l:action ==# 'r'
-    " Replace the selection
-    normal! gvd
-    call claude#InsertText(l:content)
-  elseif l:action ==# 'i'
-    " Insert below the selection
-    normal! gv
-    execute "normal! o\<Esc>"
-    call claude#InsertText(l:content)
+    if s:claude_state.whole_file
+      " Replace entire buffer
+      call claude#ReplaceBuffer(l:content)
+    else
+      " Replace the selection
+      normal! gvd
+      call claude#InsertText(l:content)
+    endif
   elseif l:action ==# 's'
     " Show in a split
     call claude#ShowInSplit(l:content, s:claude_state.user_prompt)
   else
     echo "\nInvalid action. Cancelled."
   endif
+
+  " Reset whole_file flag
+  let s:claude_state.whole_file = 0
+endfunction
+
+function! claude#ReplaceBuffer(text) abort
+  " Replace entire buffer with new content
+  " Save cursor position
+  let l:save_cursor = getcurpos()
+
+  " Delete all lines
+  silent! %delete _
+
+  " Insert new content
+  let l:lines = split(a:text, "\n", 1)
+  call setline(1, l:lines)
+
+  " Try to restore cursor position (may be out of range now)
+  try
+    call setpos('.', l:save_cursor)
+  catch
+    " If position is invalid, go to first line
+    normal! gg
+  endtry
+
+  echo "Buffer replaced with Claude's response"
 endfunction
 
 function! claude#InsertText(text) abort
@@ -199,7 +369,7 @@ function! claude#ShowInSplit(content, prompt) abort
   setlocal buftype=nofile
   setlocal bufhidden=wipe
   setlocal noswapfile
-  setlocal nowrap
+  setlocal wrap
 
   " Set buffer name
   execute 'file Claude:\ ' . escape(a:prompt, ' ')

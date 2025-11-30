@@ -1,6 +1,6 @@
 # vim-claude
 
-A Vim plugin to integrate Claude AI directly into your editor. Select text, ask Claude what to do with it, and get instant AI-powered assistance.
+A Vim plugin to integrate Claude AI directly into your editor using Claude Code. Select text, ask Claude what to do with it, and get instant AI-powered assistance - all covered by your existing Claude subscription!
 
 ## Features
 
@@ -9,19 +9,16 @@ A Vim plugin to integrate Claude AI directly into your editor. Select text, ask 
   - Replace the selected text with Claude's response
   - Insert Claude's response below the selection
   - Show the response in a new split window
-- **Customizable**: Configure your preferred Claude model, API key, and key mappings
+- **No API Keys Required**: Uses Claude Code CLI, so it's covered by your existing Claude subscription
+- **Customizable**: Configure key mappings and CLI path
 
 ## Installation
 
 ### Prerequisites
 
-1. Python 3 installed on your system
-2. Anthropic Python SDK:
-   ```bash
-   pip install anthropic
-   ```
-
-3. An Anthropic API key (get one at https://console.anthropic.com/)
+1. **Claude Code installed** - You need the `claude` CLI available in your PATH
+   - If you have Claude Pro or Claude Max, you already have access
+   - Install from: https://docs.claude.com/claude-code
 
 ### Using Pathogen
 
@@ -31,15 +28,7 @@ A Vim plugin to integrate Claude AI directly into your editor. Select text, ask 
    git clone https://github.com/yourusername/vim-claude.git
    ```
 
-2. Set your API key in your `.vimrc`:
-   ```vim
-   let g:claude_api_key = 'your-api-key-here'
-   ```
-
-   Or set the `ANTHROPIC_API_KEY` environment variable:
-   ```bash
-   export ANTHROPIC_API_KEY='your-api-key-here'
-   ```
+2. Restart Vim - that's it! No API keys or additional configuration needed.
 
 ### Using Other Plugin Managers
 
@@ -97,14 +86,8 @@ A Vim plugin to integrate Claude AI directly into your editor. Select text, ask 
 Add these to your `.vimrc` to customize the plugin:
 
 ```vim
-" Set API key (required if not using environment variable)
-let g:claude_api_key = 'your-api-key-here'
-
-" Set Claude model (optional, default: claude-sonnet-4-20250514)
-let g:claude_model = 'claude-sonnet-4-20250514'
-
-" Set max tokens (optional, default: 4096)
-let g:claude_max_tokens = 8192
+" Set custom Claude CLI command path (optional, default: 'claude')
+let g:claude_cli_command = '/path/to/claude'
 
 " Disable default key mapping (optional)
 let g:claude_no_default_mappings = 1
@@ -113,29 +96,27 @@ let g:claude_no_default_mappings = 1
 vmap <Leader>ai <Plug>ClaudePrompt
 ```
 
-## Commands
-
-- `:ClaudeSetAPIKey <key>` - Set the API key from within Vim
-
 ## Troubleshooting
 
-**Error: "anthropic package not installed"**
-- Run: `pip install anthropic`
-
-**Error: "API key not set"**
-- Set `g:claude_api_key` in your `.vimrc` or set the `ANTHROPIC_API_KEY` environment variable
+**Error: "Claude CLI not found"**
+- Make sure Claude Code is installed and the `claude` command is in your PATH
+- Or set `g:claude_cli_command` to the full path of the Claude CLI
 
 **No response from Claude**
 - Check your internet connection
-- Verify your API key is valid
-- Check if you have API credits remaining
+- Make sure you're logged into Claude Code
+- Try running `claude "test"` in your terminal to verify it works
+
+**Plugin not loading**
+- Make sure Pathogen is set up correctly
+- Check that the plugin is in `~/.vim/bundle/vim-claude/`
+- Try running `:scriptnames` in Vim to see if the plugin loaded
 
 ## Requirements
 
-- Vim 8.0+ (with Python 3 support)
-- Python 3.6+
-- `anthropic` Python package
-- Valid Anthropic API key
+- Vim 8.0+
+- Claude Code installed and accessible via CLI
+- Active Claude subscription (Pro or Max)
 
 ## License
 

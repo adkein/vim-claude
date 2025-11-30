@@ -5,7 +5,7 @@ A Vim plugin to integrate Claude AI directly into your editor using Claude Code.
 ## Features
 
 - **Visual Selection Integration**: Select any text in visual mode and send it to Claude with a custom prompt
-- **Async Processing with Progress Indicator**: Beautiful animated spinner shows progress while Claude thinks
+- **Async Processing with Progress Indicator**: Animated ASCII spinner shows progress while Claude thinks
 - **Flexible Output Options**:
   - Replace the selected text with Claude's response
   - Insert Claude's response below the selection

@@ -10,7 +10,7 @@ let s:claude_state = {
       \ 'processing': 0
       \ }
 
-let s:spinner_frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
+let s:spinner_frames = ['|', '/', '-', '\']
 
 function! claude#ProcessSelection() abort
   " Check if already processing

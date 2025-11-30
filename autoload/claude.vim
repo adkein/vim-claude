@@ -24,8 +24,9 @@ function! s:GenerateUUID() abort
   let l:uuid = ''
 
   " Seed random with current time for better entropy
-  " Use modulo to keep seed in valid range for srand()
-  let l:seed = (localtime() + reltimefloat(reltime()) * 1000000) % 0x7FFFFFFF
+  " Convert float to integer before modulo
+  let l:time_component = float2nr(reltimefloat(reltime()) * 1000000)
+  let l:seed = (localtime() + l:time_component) % 0x7FFFFFFF
   call srand(l:seed)
 
   for l:i in range(36)

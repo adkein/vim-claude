@@ -1,6 +1,6 @@
 " vim-claude: Integrate Claude AI into Vim
 " Maintainer: Your Name
-" Version: 0.5.2
+" Version: 0.5.3
 
 if exists('g:loaded_claude')
   finish

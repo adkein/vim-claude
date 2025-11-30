@@ -19,19 +19,25 @@ let s:buffers_sent = {}
 
 " Generate a UUID v4 for session tracking
 function! s:GenerateUUID() abort
-  " Simple UUID v4 generation
+  " UUID v4 generation with timestamp for better uniqueness
   let l:chars = '0123456789abcdef'
   let l:uuid = ''
+
+  " Seed random with current time in microseconds for better entropy
+  let l:seed = localtime() * 1000000 + reltimefloat(reltime()) * 1000000
 
   for l:i in range(36)
     if l:i == 8 || l:i == 13 || l:i == 18 || l:i == 23
       let l:uuid .= '-'
     elseif l:i == 14
+      " Version 4
       let l:uuid .= '4'
     elseif l:i == 19
-      let l:uuid .= l:chars[4 + (rand() % 4)]
+      " Variant bits (10xx) - should be 8, 9, a, or b
+      let l:uuid .= l:chars[8 + (rand() % 4)]
     else
-      let l:uuid .= l:chars[rand() % 16]
+      " Add seed influence for better uniqueness
+      let l:uuid .= l:chars[rand(l:seed) % 16]
     endif
   endfor
 
@@ -287,9 +293,19 @@ function! claude#OnClose(channel) abort
   let s:claude_state.processing = 0
 
   if l:exit_status != 0 || empty(l:content)
-    echohl ErrorMsg
-    echo "Claude CLI error: " . (empty(l:content) ? "No response received" : l:content)
-    echohl None
+    " Check if session ID conflict
+    if l:content =~# 'Session ID.*is already in use'
+      " Generate new session ID and inform user
+      let s:claude_state.session_id = s:GenerateUUID()
+      let s:buffers_sent = {}
+      echohl WarningMsg
+      echo "Session ID conflict detected. Generated new session ID. Please retry your request."
+      echohl None
+    else
+      echohl ErrorMsg
+      echo "Claude CLI error: " . (empty(l:content) ? "No response received" : l:content)
+      echohl None
+    endif
     return
   endif
 

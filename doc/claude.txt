@@ -77,8 +77,7 @@ remembers previous interactions, allowing for follow-up questions.
 SESSION MANAGEMENT                                            *claude-sessions*
 
 The plugin maintains a persistent conversation session across all requests
-in the same Vim session. Each Vim session gets a unique UUID that's passed
-to Claude Code via --session-id.
+in the same Vim session using Claude Code's -c (continue) flag.
 
 This means:
   - Claude remembers all previous interactions
@@ -97,8 +96,7 @@ Multi-File Context:
     - After editing file1.py, use :ClaudeResendFile to update Claude's context
 
 Commands:
-  :ClaudeNewSession  - Start fresh (clears all context and buffer tracking)
-  :ClaudeShowSession - Show current session ID for debugging
+  :ClaudeNewSession  - Start fresh (next request won't use -c flag)
   :ClaudeResendFile  - Mark current buffer to resend on next normal mode prompt
 
 ==============================================================================
@@ -162,12 +160,8 @@ COMMANDS                                                      *claude-commands*
 
                                                           *:ClaudeNewSession*
 :ClaudeNewSession
-    Start a new conversation session. Clears all conversation context and
-    buffer tracking. Use this when switching to an unrelated task.
-
-                                                         *:ClaudeShowSession*
-:ClaudeShowSession
-    Display the current session ID for debugging purposes.
+    Start a new conversation session. Resets the continue flag so the next
+    request starts fresh. Also clears buffer tracking.
 
                                                           *:ClaudeResendFile*
 :ClaudeResendFile

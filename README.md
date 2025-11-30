@@ -170,8 +170,7 @@ When using normal mode prompts, each file is sent **only once per session**:
 This saves tokens and makes responses faster while still allowing Claude to synthesize information across multiple files.
 
 **Commands:**
-- `:ClaudeNewSession` - Start a fresh conversation (clears all context and buffer tracking)
-- `:ClaudeShowSession` - Display the current session ID
+- `:ClaudeNewSession` - Start a fresh conversation (next request won't use `-c` flag)
 - `:ClaudeResendFile` - Mark current buffer to be resent on next normal mode prompt
 
 **Example use case for new session:**
@@ -224,7 +223,7 @@ When you invoke the plugin:
 
 The plugin uses Vim's async job system, so Vim remains responsive while Claude processes your request.
 
-**Session persistence:** Each Vim session gets a unique conversation ID that's passed to Claude Code with `--session-id`. This means Claude remembers all previous interactions in the same Vim session, allowing for multi-turn conversations and follow-up questions.
+**Session persistence:** The plugin uses Claude Code's `-c` (continue) flag to maintain conversation context. The first request in a Vim session starts a new conversation, and all subsequent requests continue that conversation automatically.
 
 ## License
 

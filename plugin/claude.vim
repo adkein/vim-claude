@@ -1,6 +1,6 @@
 " vim-claude: Integrate Claude AI into Vim
 " Maintainer: Your Name
-" Version: 0.5.3
+" Version: 0.6.0
 
 if exists('g:loaded_claude')
   finish
@@ -41,5 +41,4 @@ endif
 
 " Session management commands
 command! ClaudeNewSession call claude#NewSession()
-command! ClaudeShowSession call claude#ShowSessionId()
 command! ClaudeResendFile call claude#ResendFile()

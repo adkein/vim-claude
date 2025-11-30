@@ -10,44 +10,14 @@ let s:claude_state = {
       \ 'processing': 0,
       \ 'temp_file': '',
       \ 'action': '',
-      \ 'session_id': '',
       \ 'whole_file': 0
       \ }
 
 " Track which buffers have been sent to Claude this session
 let s:buffers_sent = {}
 
-" Generate a UUID v4 for session tracking
-function! s:GenerateUUID() abort
-  " UUID v4 generation with timestamp for better uniqueness
-  let l:chars = '0123456789abcdef'
-  let l:uuid = ''
-
-  " Seed random with current time for better entropy
-  " Convert float to integer before modulo
-  let l:time_component = float2nr(reltimefloat(reltime()) * 1000000)
-  let l:seed = (localtime() + l:time_component) % 0x7FFFFFFF
-  call srand(l:seed)
-
-  for l:i in range(36)
-    if l:i == 8 || l:i == 13 || l:i == 18 || l:i == 23
-      let l:uuid .= '-'
-    elseif l:i == 14
-      " Version 4
-      let l:uuid .= '4'
-    elseif l:i == 19
-      " Variant bits (10xx) - should be 8, 9, a, or b
-      let l:uuid .= l:chars[8 + (rand() % 4)]
-    else
-      let l:uuid .= l:chars[rand() % 16]
-    endif
-  endfor
-
-  return l:uuid
-endfunction
-
-" Initialize session ID
-let s:claude_state.session_id = s:GenerateUUID()
+" Track if we've made any requests yet (for -c flag usage)
+let s:first_request_made = 0
 
 let s:spinner_frames = ['|', '/', '-', '\']
 
@@ -164,13 +134,9 @@ function! claude#NewSession() abort
     return
   endif
 
-  let s:claude_state.session_id = s:GenerateUUID()
+  let s:first_request_made = 0
   let s:buffers_sent = {}
-  echo "New Claude session started: " . s:claude_state.session_id
-endfunction
-
-function! claude#ShowSessionId() abort
-  echo "Current Claude session ID: " . s:claude_state.session_id
+  echo "New Claude session started (next request will start fresh conversation)"
 endfunction
 
 function! claude#ResendFile() abort
@@ -238,12 +204,20 @@ function! claude#CallAPIAsync(selected_text, user_prompt) abort
   " Store temp file path in state for cleanup later
   let s:claude_state.temp_file = l:temp_input
 
-  " Build command to pipe temp file to claude with session ID
-  let l:cmd = printf('%s --model %s --session-id %s < %s',
-        \ g:claude_cli_command,
-        \ g:claude_model,
-        \ s:claude_state.session_id,
-        \ shellescape(l:temp_input))
+  " Build command to pipe temp file to claude
+  " Use -c (continue) flag if this isn't the first request
+  if s:first_request_made
+    let l:cmd = printf('%s --model %s -c < %s',
+          \ g:claude_cli_command,
+          \ g:claude_model,
+          \ shellescape(l:temp_input))
+  else
+    let l:cmd = printf('%s --model %s < %s',
+          \ g:claude_cli_command,
+          \ g:claude_model,
+          \ shellescape(l:temp_input))
+    let s:first_request_made = 1
+  endif
 
   " Start the job
   let l:job = job_start(['/bin/sh', '-c', l:cmd], {
@@ -295,19 +269,9 @@ function! claude#OnClose(channel) abort
   let s:claude_state.processing = 0
 
   if l:exit_status != 0 || empty(l:content)
-    " Check if session ID conflict
-    if l:content =~# 'Session ID.*is already in use'
-      " Generate new session ID and inform user
-      let s:claude_state.session_id = s:GenerateUUID()
-      let s:buffers_sent = {}
-      echohl WarningMsg
-      echo "Session ID conflict detected. Generated new session ID. Please retry your request."
-      echohl None
-    else
-      echohl ErrorMsg
-      echo "Claude CLI error: " . (empty(l:content) ? "No response received" : l:content)
-      echohl None
-    endif
+    echohl ErrorMsg
+    echo "Claude CLI error: " . (empty(l:content) ? "No response received" : l:content)
+    echohl None
     return
   endif
 

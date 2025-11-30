@@ -12,6 +12,10 @@ if !exists('g:claude_cli_command')
   let g:claude_cli_command = 'claude'
 endif
 
+if !exists('g:claude_model')
+  let g:claude_model = 'sonnet'
+endif
+
 " Main command for visual mode
 vnoremap <silent> <Plug>ClaudePrompt :<C-U>call claude#ProcessSelection()<CR>
 

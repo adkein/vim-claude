@@ -68,9 +68,9 @@ function! claude#CallAPI(selected_text, user_prompt) abort
   " Escape single quotes in the prompt for shell
   let l:prompt_escaped = substitute(l:full_prompt, "'", "'\\\\''", 'g')
 
-  " Call Claude Code CLI
+  " Call Claude Code CLI with model selection
   " Using echo to pipe the prompt to claude
-  let l:cmd = printf("printf '%%s' '%s' | %s 2>&1", l:prompt_escaped, g:claude_cli_command)
+  let l:cmd = printf("printf '%%s' '%s' | %s --model %s 2>&1", l:prompt_escaped, g:claude_cli_command, g:claude_model)
 
   let l:output = system(l:cmd)
   let l:exit_code = v:shell_error

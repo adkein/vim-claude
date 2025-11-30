@@ -52,6 +52,12 @@ Basic workflow:
 ==============================================================================
 CONFIGURATION                                            *claude-configuration*
 
+                                                              *g:claude_model*
+g:claude_model~
+    The Claude model to use for requests.
+    Options: 'sonnet', 'opus', 'haiku'
+    Default: 'sonnet'
+
                                                         *g:claude_cli_command*
 g:claude_cli_command~
     Path to the Claude CLI command.

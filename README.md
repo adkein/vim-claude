@@ -86,6 +86,10 @@ A Vim plugin to integrate Claude AI directly into your editor using Claude Code.
 Add these to your `.vimrc` to customize the plugin:
 
 ```vim
+" Set Claude model (optional, default: 'sonnet')
+" Options: 'sonnet', 'opus', 'haiku'
+let g:claude_model = 'sonnet'
+
 " Set custom Claude CLI command path (optional, default: 'claude')
 let g:claude_cli_command = '/path/to/claude'
 

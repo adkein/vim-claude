@@ -25,6 +25,9 @@ Claude Code CLI. Select text, provide a prompt, and get AI-powered assistance
 for explaining, modifying, or refactoring code - all covered by your existing
 Claude subscription!
 
+Features async processing with an animated progress indicator, so you can see
+Claude working. Prevents multiple concurrent requests to avoid confusion.
+
 ==============================================================================
 INSTALLATION                                              *claude-installation*
 
@@ -47,7 +50,10 @@ Basic workflow:
   1. Select text in visual mode
   2. Press <Leader>c
   3. Enter your prompt
-  4. Choose action: (r)eplace, (i)nsert, or (s)how
+  4. Wait while animated spinner shows progress
+  5. Choose action: (r)eplace, (i)nsert, or (s)how
+
+Note: You cannot start a new request while one is already processing.
 
 ==============================================================================
 CONFIGURATION                                            *claude-configuration*

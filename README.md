@@ -5,12 +5,14 @@ A Vim plugin to integrate Claude AI directly into your editor using Claude Code.
 ## Features
 
 - **Visual Selection Integration**: Select any text in visual mode and send it to Claude with a custom prompt
+- **Async Processing with Progress Indicator**: Beautiful animated spinner shows progress while Claude thinks
 - **Flexible Output Options**:
   - Replace the selected text with Claude's response
   - Insert Claude's response below the selection
   - Show the response in a new split window
 - **No API Keys Required**: Uses Claude Code CLI, so it's covered by your existing Claude subscription
-- **Customizable**: Configure key mappings and CLI path
+- **Customizable**: Configure key mappings, CLI path, and model selection
+- **Non-blocking**: Continue viewing your code while waiting for responses
 
 ## Installation
 
@@ -118,9 +120,20 @@ vmap <Leader>ai <Plug>ClaudePrompt
 
 ## Requirements
 
-- Vim 8.0+
+- Vim 8.0+ (with job and timer support)
 - Claude Code installed and accessible via CLI
 - Active Claude subscription (Pro or Max)
+
+## How It Works
+
+When you invoke the plugin:
+1. Select text and press `<Leader>c`
+2. Enter your prompt
+3. An animated spinner appears showing Claude is processing
+4. You cannot start another request until the current one completes
+5. When complete, choose how to display the result
+
+The plugin uses Vim's async job system, so Vim remains responsive while Claude processes your request.
 
 ## License
 

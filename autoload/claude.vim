@@ -7,7 +7,8 @@ let s:claude_state = {
       \ 'user_prompt': '',
       \ 'timer': -1,
       \ 'spinner_idx': 0,
-      \ 'processing': 0
+      \ 'processing': 0,
+      \ 'temp_file': ''
       \ }
 
 let s:spinner_frames = ['|', '/', '-', '\']
@@ -89,6 +90,9 @@ function! claude#CallAPIAsync(selected_text, user_prompt) abort
   let l:temp_input = tempname()
   call writefile(split(l:full_prompt, "\n"), l:temp_input)
 
+  " Store temp file path in state for cleanup later
+  let s:claude_state.temp_file = l:temp_input
+
   " Build command to pipe temp file to claude
   let l:cmd = printf('%s --model %s < %s', g:claude_cli_command, g:claude_model, shellescape(l:temp_input))
 
@@ -97,14 +101,14 @@ function! claude#CallAPIAsync(selected_text, user_prompt) abort
         \ 'out_cb': function('claude#OnOutput'),
         \ 'err_cb': function('claude#OnError'),
         \ 'exit_cb': function('claude#OnExit'),
-        \ 'close_cb': function('claude#OnClose'),
-        \ 'temp_file': l:temp_input
+        \ 'close_cb': function('claude#OnClose')
         \ })
 
   if job_status(l:job) == 'fail'
     call claude#StopSpinner()
     let s:claude_state.processing = 0
     call delete(l:temp_input)
+    let s:claude_state.temp_file = ''
     echohl ErrorMsg
     echo "Failed to start Claude CLI job"
     echohl None
@@ -120,10 +124,10 @@ function! claude#OnError(channel, msg) abort
 endfunction
 
 function! claude#OnExit(job, exit_status) abort
-  " Get temp file from job info and clean up
-  let l:job_info = job_info(a:job)
-  if has_key(l:job_info, 'temp_file')
-    call delete(l:job_info.temp_file)
+  " Clean up temp file
+  if !empty(s:claude_state.temp_file) && filereadable(s:claude_state.temp_file)
+    call delete(s:claude_state.temp_file)
+    let s:claude_state.temp_file = ''
   endif
 endfunction
 

@@ -23,8 +23,10 @@ function! s:GenerateUUID() abort
   let l:chars = '0123456789abcdef'
   let l:uuid = ''
 
-  " Seed random with current time in microseconds for better entropy
-  let l:seed = localtime() * 1000000 + reltimefloat(reltime()) * 1000000
+  " Seed random with current time for better entropy
+  " Use modulo to keep seed in valid range for srand()
+  let l:seed = (localtime() + reltimefloat(reltime()) * 1000000) % 0x7FFFFFFF
+  call srand(l:seed)
 
   for l:i in range(36)
     if l:i == 8 || l:i == 13 || l:i == 18 || l:i == 23
@@ -36,8 +38,7 @@ function! s:GenerateUUID() abort
       " Variant bits (10xx) - should be 8, 9, a, or b
       let l:uuid .= l:chars[8 + (rand() % 4)]
     else
-      " Add seed influence for better uniqueness
-      let l:uuid .= l:chars[rand(l:seed) % 16]
+      let l:uuid .= l:chars[rand() % 16]
     endif
   endfor
 
